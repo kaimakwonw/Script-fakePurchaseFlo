@@ -1,508 +1,239 @@
--- Script UI Roblox com Fake Purchase UGC - CORRIGIDO
+--[[
+    Kaisure UGC Tools - Versão Curta / Mobile-Friendly
+    Arrastável no celular + Hooks + Fake Purchase + UI simples
+]]
+
 local Players = game:GetService("Players")
 local MarketplaceService = game:GetService("MarketplaceService")
 local HttpService = game:GetService("HttpService")
-local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
+local UIS = game:GetService("UserInputService")
 
-local LocalPlayer = Players.LocalPlayer
+local LP = Players.LocalPlayer
 local UGC_IDS = {}
 local DELAY = 0.1
-local IS_LOOPING = false
+local LOOP = false
 
--- HOOKS CORRETOS (igual ao script pequeno)
+-----------------------------------------
+-- HOOKS
+-----------------------------------------
+
 local function setupHooks()
-    -- Hook __index para ownership
-    local originalIndex
-    originalIndex = hookmetamethod(game, "__index", function(self, key)
-        for _, assetId in pairs(UGC_IDS) do
-            if tostring(self):match("AssetOwnership|Inventory|PlayerData") and tostring(key):match("Owned|Items|UGC") then
-                return true
+    local function fakeReturn(cond, val, orig, self, keyOrMethod, ...)
+        if cond then return val end
+        return orig(self, keyOrMethod, ...)
+    end
+
+    local idx
+    idx = hookmetamethod(game, "__index", function(self, key)
+        for _, id in ipairs(UGC_IDS) do
+            if tostring(self):match("Ownership|Inventory|UGC") then
+                return fakeReturn(true, true, idx, self, key)
             end
         end
-        return originalIndex(self, key)
+        return idx(self, key)
     end)
 
-    -- Hook __namecall para PerformPurchase
-    local originalNamecall
-    originalNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+    local nc
+    nc = hookmetamethod(game, "__namecall", function(self, ...)
         local args = {...}
-        local method = getnamecallmethod()
-        
-        for _, assetId in pairs(UGC_IDS) do
-            if method == "PerformPurchase" and args[2] == assetId then
+        local m = getnamecallmethod()
+
+        for _, id in ipairs(UGC_IDS) do
+            if m == "PerformPurchase" and args[2] == id then
                 return {
                     purchaseId = HttpService:GenerateGUID(false),
                     success = true,
-                    assetId = assetId,
+                    assetId = id,
                     resale = true
                 }
             end
-        end
-        return originalNamecall(self, ...)
-    end)
-
-    -- Hook GetProductInfo
-    local originalGetProductInfo
-    originalGetProductInfo = hookmetamethod(game, "__namecall", function(self, ...)
-        local args = {...}
-        local method = getnamecallmethod()
-        
-        for _, assetId in pairs(UGC_IDS) do
-            if method == "GetProductInfo" and args[1] == assetId then
+            if m == "GetProductInfo" and args[1] == id then
                 return {
-                    AssetId = assetId,
-                    ProductId = assetId,
+                    AssetId = id,
                     PriceInRobux = 0,
-                    IsLimited = true,
                     IsForSale = true,
                     IsOwned = true
                 }
             end
-        end
-        return originalGetProductInfo(self, ...)
-    end)
-
-    -- Hook ProcessReceipt
-    local originalProcessReceipt
-    originalProcessReceipt = hookmetamethod(game, "__namecall", function(self, ...)
-        local args = {...}
-        local method = getnamecallmethod()
-        
-        for _, assetId in pairs(UGC_IDS) do
-            if method == "ProcessReceipt" and args[1] and (args[1].ProductId == assetId or args[1].AssetId == assetId) then
+            if m == "ProcessReceipt" and args[1] and (args[1].ProductId == id) then
                 return Enum.ProductPurchaseDecision.PurchaseGranted
             end
-        end
-        return originalProcessReceipt(self, ...)
-    end)
-
-    -- Hook HttpGet para inventory
-    local originalHttpGet
-    originalHttpGet = hookmetamethod(game, "__namecall", function(self, ...)
-        local args = {...}
-        local method = getnamecallmethod()
-        
-        for _, assetId in pairs(UGC_IDS) do
-            if (method == "HttpGet" or method == "HttpGetAsync") and args[1]:match("inventory%.roblox%.com") and args[1]:match(tostring(assetId)) then
+            if (m == "HttpGet" or m == "HttpGetAsync")
+                and tostring(args[1]):match("inventory") then
                 return HttpService:JSONEncode({
-                    success = true,
                     owned = true,
-                    assetId = assetId,
-                    userId = LocalPlayer.UserId
+                    assetId = id,
+                    userId = LP.UserId
                 })
             end
         end
-        return originalHttpGet(self, ...)
-    end)
 
-    -- Hook para inventory do jogo
-    local originalGameIndex
-    originalGameIndex = hookmetamethod(game, "__index", function(self, key)
-        for _, assetId in pairs(UGC_IDS) do
-            if tostring(self):match("Inventory|PlayerData|UGCSystem") and tostring(key):match("Items|Inventory|UGC") then
-                return {[tostring(assetId)] = {id = assetId, owned = true}}
-            end
-        end
-        return originalGameIndex(self, key)
+        return nc(self, ...)
     end)
 end
 
--- Funções do Fake Purchase (SIMPLIFICADAS)
-local function log(message)
-    print("[FakePurchase] " .. message)
-end
+setupHooks()
 
-local function simulateUIInteraction()
-    pcall(function()
-        for _, gui in pairs(LocalPlayer.PlayerGui:GetDescendants()) do
-            if gui:IsA("TextButton") or gui:IsA("ImageButton") then
-                if gui.Name:lower():match("trade|use|equip|claim") then
-                    gui.Activated:Fire()
-                end
-            end
-        end
-    end)
-end
+-----------------------------------------
+-- Fake purchase simples
+-----------------------------------------
 
-local function fakePurchaseFlow()
-    for _, assetId in pairs(UGC_IDS) do
+local function fakePurchase()
+    for _, id in ipairs(UGC_IDS) do
         pcall(function()
-            -- Simula a compra via hooks que já estão ativos
-            MarketplaceService:SignalPromptPurchaseFinished(LocalPlayer, assetId, true)
-            
-            -- Dispara eventos de inventory
-            local inventoryEvent = Instance.new("BindableEvent")
-            inventoryEvent.Name = "InventoryUpdated"
-            inventoryEvent:Fire(LocalPlayer, {AssetId = assetId, Owned = true, Resale = true})
-            
-            simulateUIInteraction()
-            log("Fake purchase successful for ID: " .. assetId)
+            MarketplaceService:SignalPromptPurchaseFinished(LP, id, true)
         end)
         task.wait(0.05)
     end
 end
 
-local function runAssetSequence()
-    for _, assetId in ipairs(UGC_IDS) do
-        if not IS_LOOPING then break end
-        pcall(function()
-            fakePurchaseFlow()
+-----------------------------------------
+-- UI SHORT VERSION + MOBILE DRAG
+-----------------------------------------
+
+local gui = Instance.new("ScreenGui", LP.PlayerGui)
+gui.ResetOnSpawn = false
+
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.new(0, 330, 0, 350)
+frame.Position = UDim2.new(.5, -165, .5, -175)
+frame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+
+Instance.new("UICorner", frame)
+
+local bar = Instance.new("TextLabel", frame)
+bar.Size = UDim2.new(1,0,0,35)
+bar.BackgroundColor3 = Color3.fromRGB(45,45,45)
+bar.Text = "Kaisure UGC Tools"
+bar.TextColor3 = Color3.new(1,1,1)
+bar.Font = Enum.Font.GothamBold
+bar.TextSize = 16
+
+Instance.new("UICorner", bar)
+
+-- INPUT UGC
+local box = Instance.new("TextBox", frame)
+box.Size = UDim2.new(1,-20,0,30)
+box.Position = UDim2.new(0,10,0,50)
+box.BackgroundColor3 = Color3.fromRGB(50,50,50)
+box.PlaceholderText = "IDs separados por vírgula"
+box.TextColor3 = Color3.new(1,1,1)
+
+Instance.new("UICorner", box)
+
+-- DELAY BUTTON
+local delayBtn = Instance.new("TextButton", frame)
+delayBtn.Size = UDim2.new(.45,0,0,35)
+delayBtn.Position = UDim2.new(.05,0,0,100)
+delayBtn.BackgroundColor3 = Color3.fromRGB(70,70,70)
+delayBtn.Text = "Delay: 0.1"
+
+Instance.new("UICorner", delayBtn)
+
+-- RUN BUTTON
+local runBtn = Instance.new("TextButton", frame)
+runBtn.Size = UDim2.new(.45,0,0,35)
+runBtn.Position = UDim2.new(.5,0,0,100)
+runBtn.BackgroundColor3 = Color3.fromRGB(0,140,70)
+runBtn.Text = "EXECUTAR"
+
+Instance.new("UICorner", runBtn)
+
+-- LOOP BUTTON
+local loopBtn = Instance.new("TextButton", frame)
+loopBtn.Size = UDim2.new(.9,0,0,35)
+loopBtn.Position = UDim2.new(.05,0,0,145)
+loopBtn.BackgroundColor3 = Color3.fromRGB(140,40,40)
+loopBtn.Text = "INICIAR LOOP"
+
+Instance.new("UICorner", loopBtn)
+
+-- STATUS
+local status = Instance.new("TextLabel", frame)
+status.Size = UDim2.new(.9,0,0,80)
+status.Position = UDim2.new(.05,0,0,195)
+status.TextWrapped = true
+status.TextColor3 = Color3.new(1,1,1)
+status.BackgroundTransparency = 1
+status.Text = "Aguardando IDs..."
+
+-----------------------------------------
+-- MOBILE + PC DRAG
+-----------------------------------------
+
+local dragging = false
+local dragStart
+local startPos
+
+local function drag(input)
+    local delta = input.Position - dragStart
+    frame.Position = UDim2.new(
+        startPos.X.Scale, startPos.X.Offset + delta.X,
+        startPos.Y.Scale, startPos.Y.Offset + delta.Y
+    )
+end
+
+bar.InputBegan:Connect(function(i)
+    if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = i.Position
+        startPos = frame.Position
+        i.Changed:Connect(function()
+            if i.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
         end)
-        task.wait(DELAY)
     end
-end
-
--- SETUP HOOKS ANTES DA UI (ORDEM CORRETA)
-setupHooks()
-
--- Criar UI Nativa do Roblox (VERSÃO MOBILE REDUZIDA)
-local function CreateNativeUI()
-    local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "KaisureUGCTools"
-    ScreenGui.ResetOnSpawn = false
-    ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
-
-    -- FRAME PRINCIPAL (REDUZIDO)
-    local MainFrame = Instance.new("Frame")
-    MainFrame.Size = UDim2.new(0, 280, 0, 360)
-    MainFrame.Position = UDim2.new(0.5, -140, 0.5, -180)
-    MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    MainFrame.BorderSizePixel = 0
-    MainFrame.Parent = ScreenGui
-
-    local UICorner = Instance.new("UICorner")
-    UICorner.CornerRadius = UDim.new(0, 10)
-    UICorner.Parent = MainFrame
-
-    -- TÍTULO
-    local TitleBar = Instance.new("Frame")
-    TitleBar.Size = UDim2.new(1, 0, 0, 40)
-    TitleBar.BackgroundColor3 = Color3.fromRGB(45,45,45)
-    TitleBar.BorderSizePixel = 0
-    TitleBar.Parent = MainFrame
-
-    local TitleCorner = Instance.new("UICorner")
-    TitleCorner.CornerRadius = UDim.new(0, 10)
-    TitleCorner.Parent = TitleBar
-
-    local TitleLabel = Instance.new("TextLabel")
-    TitleLabel.Size = UDim2.new(1, -80, 1, 0)
-    TitleLabel.Position = UDim2.new(0, 10, 0, 0)
-    TitleLabel.BackgroundTransparency = 1
-    TitleLabel.Text = "Kaisure UGC Tools"
-    TitleLabel.TextColor3 = Color3.fromRGB(255,255,255)
-    TitleLabel.TextSize = 14
-    TitleLabel.Font = Enum.Font.GothamBold
-    TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
-    TitleLabel.Parent = TitleBar
-
-    local CloseButton = Instance.new("TextButton")
-    CloseButton.Size = UDim2.new(0, 32, 0, 32)
-    CloseButton.Position = UDim2.new(1, -36, 0.5, -16)
-    CloseButton.BackgroundColor3 = Color3.fromRGB(200,60,60)
-    CloseButton.Text = "X"
-    CloseButton.TextColor3 = Color3.fromRGB(255,255,255)
-    CloseButton.TextSize = 16
-    CloseButton.Font = Enum.Font.GothamBold
-    CloseButton.Parent = TitleBar
-
-    local MinimizeButton = Instance.new("TextButton")
-    MinimizeButton.Size = UDim2.new(0, 32, 0, 32)
-    MinimizeButton.Position = UDim2.new(1, -72, 0.5, -16)
-    MinimizeButton.BackgroundColor3 = Color3.fromRGB(80,80,80)
-    MinimizeButton.Text = "_"
-    MinimizeButton.TextColor3 = Color3.fromRGB(255,255,255)
-    MinimizeButton.TextSize = 16
-    MinimizeButton.Font = Enum.Font.GothamBold
-    MinimizeButton.Parent = TitleBar
-
-    -- ÁREA DE CONTEÚDO
-    local ContentFrame = Instance.new("Frame")
-    ContentFrame.Size = UDim2.new(1, -16, 1, -56)
-    ContentFrame.Position = UDim2.new(0, 8, 0, 48)
-    ContentFrame.BackgroundTransparency = 1
-    ContentFrame.Parent = MainFrame
-
-    ------------------------------------------------------------------------------------
-    -- UGC INPUT (ENXUTO)
-    ------------------------------------------------------------------------------------
-    local UGCSection = Instance.new("Frame")
-    UGCSection.Size = UDim2.new(1, 0, 0, 85)
-    UGCSection.BackgroundColor3 = Color3.fromRGB(40,40,40)
-    UGCSection.Parent = ContentFrame
-
-    local UC = Instance.new("UICorner")
-    UC.Parent = UGCSection
-
-    local UGCLabel = Instance.new("TextLabel")
-    UGCLabel.Size = UDim2.new(1, -16, 0, 20)
-    UGCLabel.Position = UDim2.new(0, 8, 0, 5)
-    UGCLabel.BackgroundTransparency = 1
-    UGCLabel.Text = "IDs UGC:"
-    UGCLabel.TextColor3 = Color3.fromRGB(255,255,255)
-    UGCLabel.TextSize = 13
-    UGCLabel.Font = Enum.Font.Gotham
-    UGCLabel.TextXAlignment = Enum.TextXAlignment.Left
-    UGCLabel.Parent = UGCSection
-
-    local UGCInput = Instance.new("TextBox")
-    UGCInput.Size = UDim2.new(1, -16, 0, 30)
-    UGCInput.Position = UDim2.new(0, 8, 0, 30)
-    UGCInput.BackgroundColor3 = Color3.fromRGB(60,60,60)
-    UGCInput.TextColor3 = Color3.fromRGB(255,255,255)
-    UGCInput.PlaceholderText = "123, 456..."
-    UGCInput.TextSize = 13
-    UGCInput.Font = Enum.Font.Gotham
-    UGCInput.Parent = UGCSection
-
-    local UC2 = Instance.new("UICorner")
-    UC2.Parent = UGCInput
-
-    ------------------------------------------------------------------------------------
-    -- DELAY (MENOR)
-    ------------------------------------------------------------------------------------
-    local DelaySection = Instance.new("Frame")
-    DelaySection.Size = UDim2.new(1, 0, 0, 55)
-    DelaySection.Position = UDim2.new(0, 0, 0, 90)
-    DelaySection.BackgroundColor3 = Color3.fromRGB(40,40,40)
-    DelaySection.Parent = ContentFrame
-
-    local D1 = Instance.new("UICorner")
-    D1.Parent = DelaySection
-
-    local DelayLabel = Instance.new("TextLabel")
-    DelayLabel.Size = UDim2.new(1, -16, 0, 18)
-    DelayLabel.Position = UDim2.new(0, 8, 0, 5)
-    DelayLabel.BackgroundTransparency = 1
-    DelayLabel.Text = "Delay: " .. DELAY
-    DelayLabel.TextColor3 = Color3.fromRGB(255,255,255)
-    DelayLabel.TextSize = 12
-    DelayLabel.Font = Enum.Font.Gotham
-    DelayLabel.TextXAlignment = Enum.TextXAlignment.Left
-    DelayLabel.Parent = DelaySection
-
-    local DelaySlider = Instance.new("TextButton")
-    DelaySlider.Size = UDim2.new(1, -16, 0, 24)
-    DelaySlider.Position = UDim2.new(0, 8, 0, 28)
-    DelaySlider.BackgroundColor3 = Color3.fromRGB(80,80,80)
-    DelaySlider.Text = "Ajustar"
-    DelaySlider.TextColor3 = Color3.fromRGB(255,255,255)
-    DelaySlider.TextSize = 12
-    DelaySlider.Font = Enum.Font.Gotham
-    DelaySlider.Parent = DelaySection
-
-    local DS = Instance.new("UICorner")
-    DS.Parent = DelaySlider
-
-    ------------------------------------------------------------------------------------
-    -- BOTÕES (REDUZIDOS)
-    ------------------------------------------------------------------------------------
-    local ControlSection = Instance.new("Frame")
-    ControlSection.Size = UDim2.new(1, 0, 0, 70)
-    ControlSection.Position = UDim2.new(0, 0, 0, 150)
-    ControlSection.BackgroundColor3 = Color3.fromRGB(40,40,40)
-    ControlSection.Parent = ContentFrame
-
-    local CC = Instance.new("UICorner")
-    CC.Parent = ControlSection
-
-    local RunButton = Instance.new("TextButton")
-    RunButton.Size = UDim2.new(0.48, 0, 0, 30)
-    RunButton.Position = UDim2.new(0.01, 0, 0.5, -15)
-    RunButton.BackgroundColor3 = Color3.fromRGB(60,140,60)
-    RunButton.Text = "RUN"
-    RunButton.TextColor3 = Color3.fromRGB(255,255,255)
-    RunButton.TextSize = 13
-    RunButton.Font = Enum.Font.GothamBold
-    RunButton.Parent = ControlSection
-
-    local LoopButton = Instance.new("TextButton")
-    LoopButton.Size = UDim2.new(0.48, 0, 0, 30)
-    LoopButton.Position = UDim2.new(0.51, 0, 0.5, -15)
-    LoopButton.BackgroundColor3 = Color3.fromRGB(140,60,60)
-    LoopButton.Text = "LOOP"
-    LoopButton.TextColor3 = Color3.fromRGB(255,255,255)
-    LoopButton.TextSize = 13
-    LoopButton.Font = Enum.Font.GothamBold
-    LoopButton.Parent = ControlSection
-
-    ------------------------------------------------------------------------------------
-    -- STATUS (REDUZIDO)
-    ------------------------------------------------------------------------------------
-    local StatusSection = Instance.new("Frame")
-    StatusSection.Size = UDim2.new(1, 0, 0, 50)
-    StatusSection.Position = UDim2.new(0, 0, 0, 225)
-    StatusSection.BackgroundColor3 = Color3.fromRGB(40,40,40)
-    StatusSection.Parent = ContentFrame
-
-    local SS = Instance.new("UICorner")
-    SS.Parent = StatusSection
-
-    local StatusLabel = Instance.new("TextLabel")
-    StatusLabel.Size = UDim2.new(1, -16, 1, -10)
-    StatusLabel.Position = UDim2.new(0, 8, 0, 5)
-    StatusLabel.BackgroundTransparency = 1
-    StatusLabel.Text = "Status: pronto."
-    StatusLabel.TextColor3 = Color3.fromRGB(200,200,200)
-    StatusLabel.TextSize = 11
-    StatusLabel.Font = Enum.Font.Gotham
-    StatusLabel.TextWrapped = true
-    StatusLabel.Parent = StatusSection
-
-    ------------------------------------------------------------------------------------
-    -- CRÉDITOS (REDUZIDO)
-    ------------------------------------------------------------------------------------
-    local CreditSection = Instance.new("Frame")
-    CreditSection.Size = UDim2.new(1, 0, 0, 40)
-    CreditSection.Position = UDim2.new(0, 0, 0, 280)
-    CreditSection.BackgroundColor3 = Color3.fromRGB(40,40,40)
-    CreditSection.Parent = ContentFrame
-
-    local CS = Instance.new("UICorner")
-    CS.Parent = CreditSection
-
-    local CreditButton = Instance.new("TextButton")
-    CreditButton.Size = UDim2.new(1, -16, 1, -10)
-    CreditButton.Position = UDim2.new(0, 8, 0, 5)
-    CreditButton.BackgroundColor3 = Color3.fromRGB(80,80,180)
-    CreditButton.Text = "CRÉDITOS"
-    CreditButton.TextColor3 = Color3.fromRGB(255,255,255)
-    CreditButton.TextSize = 12
-    CreditButton.Font = Enum.Font.GothamBold
-    CreditButton.Parent = CreditSection
-
-    local CC2 = Instance.new("UICorner")
-    CC2.Parent = CreditButton
-
-    -- Função para arrastar a janela
-    local dragging = false
-    local dragInput, mousePos, framePos
-
-    TitleBar.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = true
-            mousePos = input.Position
-            framePos = MainFrame.Position
-            
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    dragging = false
-                end
-            end)
-        end
-    end)
-
-    TitleBar.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement then
-            dragInput = input
-        end
-    end)
-
-    UserInputService.InputChanged:Connect(function(input)
-        if input == dragInput and dragging then
-            local delta = input.Position - mousePos
-            MainFrame.Position = UDim2.new(
-                framePos.X.Scale, 
-                framePos.X.Offset + delta.X,
-                framePos.Y.Scale, 
-                framePos.Y.Offset + delta.Y
-            )
-        end
-    end)
-
-    -- Funções dos botões
-    CloseButton.MouseButton1Click:Connect(function()
-        ScreenGui:Destroy()
-    end)
-
-    local isMinimized = false
-    MinimizeButton.MouseButton1Click:Connect(function()
-        isMinimized = not isMinimized
-        if isMinimized then
-            TweenService:Create(MainFrame, TweenInfo.new(0.3), {Size = UDim2.new(0, 280, 0, 40)}):Play()
-            ContentFrame.Visible = false
-        else
-            TweenService:Create(MainFrame, TweenInfo.new(0.3), {Size = UDim2.new(0, 280, 0, 360)}):Play()
-            ContentFrame.Visible = true
-        end
-    end)
-
-    UGCInput.FocusLost:Connect(function()
-        UGC_IDS = {}
-        local text = UGCInput.Text or ""
-        for id in text:gmatch("%d+") do
-            table.insert(UGC_IDS, tonumber(id))
-        end
-        StatusLabel.Text = "Status: " .. #UGC_IDS .. " IDs carregados\nPronto para executar!"
-    end)
-
-    DelaySlider.MouseButton1Click:Connect(function()
-        DELAY = DELAY + 0.1
-        if DELAY > 1 then DELAY = 0.1 end
-        DelayLabel.Text = "Delay: " .. DELAY .. " segundos"
-        StatusLabel.Text = "Status: Delay ajustado para " .. DELAY .. "s"
-    end)
-
-    RunButton.MouseButton1Click:Connect(function()
-        if #UGC_IDS == 0 then
-            StatusLabel.Text = "Status: ERRO - Adicione IDs UGC primeiro!"
-            return
-        end
-        
-        StatusLabel.Text = "Status: Executando fake purchase..."
-        spawn(function()
-            fakePurchaseFlow()
-            StatusLabel.Text = "Status: Fake purchase completo!\n" .. #UGC_IDS .. " IDs processados"
-        end)
-    end)
-
-    LoopButton.MouseButton1Click:Connect(function()
-        if #UGC_IDS == 0 then
-            StatusLabel.Text = "Status: ERRO - Adicione IDs UGC primeiro!"
-            return
-        end
-        
-        IS_LOOPING = not IS_LOOPING
-        
-        if IS_LOOPING then
-            LoopButton.Text = "PARAR LOOP"
-            LoopButton.BackgroundColor3 = Color3.fromRGB(60, 140, 60)
-            StatusLabel.Text = "Status: LOOP ATIVADO\nDelay: " .. DELAY .. "s"
-            
-            spawn(function()
-                while IS_LOOPING do
-                    runAssetSequence()
-                    task.wait(0.5)
-                end
-            end)
-        else
-            LoopButton.Text = "LOOP"
-            LoopButton.BackgroundColor3 = Color3.fromRGB(140, 60, 60)
-            StatusLabel.Text = "Status: Loop parado"
-        end
-    end)
-
-    CreditButton.MouseButton1Click:Connect(function()
-        setclipboard("https://youtube.com/@imkaisure?si=hOx6mHvKYSVmobXP")
-        StatusLabel.Text = "Status: Link copiado!\nSaindo do Roblox..."
-        
-        wait(2)
-        game:Shutdown()
-    end)
-
-    StatusLabel.Text = "Status: Sistema carregado! Hooks ativos."
-
-    return ScreenGui
-end
-
--- Criar a UI (AGORA OS HOOKS JÁ ESTÃO ATIVOS)
-pcall(function()
-    CreateNativeUI()
-    print("Kaisure UGC Tools - Hooks ativos e UI carregada!")
 end)
 
--- 🔒 DIGITAL SIGNATURE: kaimakwonw/Script-fakePurchaseFlo - DO NOT MODIFY
--- 📅 Created: 2024-11-24 - Tracked by Git
+UIS.InputChanged:Connect(function(i)
+    if dragging and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
+        drag(i)
+    end
+end)
+
+-----------------------------------------
+-- HANDLERS
+-----------------------------------------
+
+box.FocusLost:Connect(function()
+    UGC_IDS = {}
+    for id in box.Text:gmatch("%d+") do
+        table.insert(UGC_IDS, tonumber(id))
+    end
+    status.Text = "IDs carregados: " .. #UGC_IDS
+end)
+
+delayBtn.MouseButton1Click:Connect(function()
+    DELAY += 0.1
+    if DELAY > 1 then DELAY = 0.1 end
+    delayBtn.Text = "Delay: " .. DELAY
+end)
+
+runBtn.MouseButton1Click:Connect(function()
+    if #UGC_IDS == 0 then status.Text = "Adicione IDs!"; return end
+    status.Text = "Executando..."
+    fakePurchase()
+    status.Text = "Concluído!"
+end)
+
+loopBtn.MouseButton1Click:Connect(function()
+    if #UGC_IDS == 0 then status.Text = "Adicione IDs!"; return end
+
+    LOOP = not LOOP
+    loopBtn.Text = LOOP and "PARAR LOOP" or "INICIAR LOOP"
+    loopBtn.BackgroundColor3 = LOOP and Color3.fromRGB(0,140,70) or Color3.fromRGB(140,40,40)
+
+    status.Text = LOOP and "Loop ativo..." or "Loop parado."
+
+    if LOOP then
+        task.spawn(function()
+            while LOOP do
+                fakePurchase()
+                task.wait(DELAY)
+            end
+        end)
+    end
+end)
+
+print("Kaisure Tools carregado.")
