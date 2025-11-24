@@ -157,7 +157,7 @@ end
 -- SETUP HOOKS ANTES DA UI (ORDEM CORRETA)
 setupHooks()
 
--- Criar UI Nativa do Roblox
+-- Criar UI Nativa do Roblox (VERSÃO MOBILE REDUZIDA)
 local function CreateNativeUI()
     local ScreenGui = Instance.new("ScreenGui")
     ScreenGui.Name = "KaisureUGCTools"
@@ -165,233 +165,217 @@ local function CreateNativeUI()
     ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
-    -- Frame principal
+    -- FRAME PRINCIPAL (REDUZIDO)
     local MainFrame = Instance.new("Frame")
-    MainFrame.Size = UDim2.new(0, 400, 0, 500)
-    MainFrame.Position = UDim2.new(0.5, -200, 0.5, -250)
+    MainFrame.Size = UDim2.new(0, 280, 0, 360)
+    MainFrame.Position = UDim2.new(0.5, -140, 0.5, -180)
     MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
     MainFrame.BorderSizePixel = 0
     MainFrame.Parent = ScreenGui
 
     local UICorner = Instance.new("UICorner")
-    UICorner.CornerRadius = UDim.new(0, 8)
+    UICorner.CornerRadius = UDim.new(0, 10)
     UICorner.Parent = MainFrame
 
-    -- Barra de título (arrastável)
+    -- TÍTULO
     local TitleBar = Instance.new("Frame")
     TitleBar.Size = UDim2.new(1, 0, 0, 40)
-    TitleBar.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    TitleBar.BackgroundColor3 = Color3.fromRGB(45,45,45)
     TitleBar.BorderSizePixel = 0
     TitleBar.Parent = MainFrame
 
     local TitleCorner = Instance.new("UICorner")
-    TitleCorner.CornerRadius = UDim.new(0, 8)
+    TitleCorner.CornerRadius = UDim.new(0, 10)
     TitleCorner.Parent = TitleBar
 
     local TitleLabel = Instance.new("TextLabel")
     TitleLabel.Size = UDim2.new(1, -80, 1, 0)
-    TitleLabel.Position = UDim2.new(0, 15, 0, 0)
+    TitleLabel.Position = UDim2.new(0, 10, 0, 0)
     TitleLabel.BackgroundTransparency = 1
     TitleLabel.Text = "Kaisure UGC Tools"
-    TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    TitleLabel.TextSize = 16
+    TitleLabel.TextColor3 = Color3.fromRGB(255,255,255)
+    TitleLabel.TextSize = 14
     TitleLabel.Font = Enum.Font.GothamBold
     TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
     TitleLabel.Parent = TitleBar
 
-    -- Botão fechar
     local CloseButton = Instance.new("TextButton")
-    CloseButton.Size = UDim2.new(0, 30, 0, 30)
-    CloseButton.Position = UDim2.new(1, -35, 0.5, -15)
-    CloseButton.BackgroundColor3 = Color3.fromRGB(200, 60, 60)
+    CloseButton.Size = UDim2.new(0, 32, 0, 32)
+    CloseButton.Position = UDim2.new(1, -36, 0.5, -16)
+    CloseButton.BackgroundColor3 = Color3.fromRGB(200,60,60)
     CloseButton.Text = "X"
-    CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    CloseButton.TextSize = 14
+    CloseButton.TextColor3 = Color3.fromRGB(255,255,255)
+    CloseButton.TextSize = 16
     CloseButton.Font = Enum.Font.GothamBold
     CloseButton.Parent = TitleBar
 
-    local CloseCorner = Instance.new("UICorner")
-    CloseCorner.CornerRadius = UDim.new(0, 6)
-    CloseCorner.Parent = CloseButton
-
-    -- Botão minimizar
     local MinimizeButton = Instance.new("TextButton")
-    MinimizeButton.Size = UDim2.new(0, 30, 0, 30)
-    MinimizeButton.Position = UDim2.new(1, -70, 0.5, -15)
-    MinimizeButton.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+    MinimizeButton.Size = UDim2.new(0, 32, 0, 32)
+    MinimizeButton.Position = UDim2.new(1, -72, 0.5, -16)
+    MinimizeButton.BackgroundColor3 = Color3.fromRGB(80,80,80)
     MinimizeButton.Text = "_"
-    MinimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    MinimizeButton.TextSize = 14
+    MinimizeButton.TextColor3 = Color3.fromRGB(255,255,255)
+    MinimizeButton.TextSize = 16
     MinimizeButton.Font = Enum.Font.GothamBold
     MinimizeButton.Parent = TitleBar
 
-    local MinimizeCorner = Instance.new("UICorner")
-    MinimizeCorner.CornerRadius = UDim.new(0, 6)
-    MinimizeCorner.Parent = MinimizeButton
-
-    -- Área de conteúdo
+    -- ÁREA DE CONTEÚDO
     local ContentFrame = Instance.new("Frame")
-    ContentFrame.Size = UDim2.new(1, -20, 1, -60)
-    ContentFrame.Position = UDim2.new(0, 10, 0, 50)
+    ContentFrame.Size = UDim2.new(1, -16, 1, -56)
+    ContentFrame.Position = UDim2.new(0, 8, 0, 48)
     ContentFrame.BackgroundTransparency = 1
     ContentFrame.Parent = MainFrame
 
-    -- Seção UGC IDs
+    ------------------------------------------------------------------------------------
+    -- UGC INPUT (ENXUTO)
+    ------------------------------------------------------------------------------------
     local UGCSection = Instance.new("Frame")
-    UGCSection.Size = UDim2.new(1, 0, 0, 120)
-    UGCSection.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    UGCSection.Size = UDim2.new(1, 0, 0, 85)
+    UGCSection.BackgroundColor3 = Color3.fromRGB(40,40,40)
     UGCSection.Parent = ContentFrame
 
-    local UGCCorner = Instance.new("UICorner")
-    UGCCorner.CornerRadius = UDim.new(0, 6)
-    UGCCorner.Parent = UGCSection
+    local UC = Instance.new("UICorner")
+    UC.Parent = UGCSection
 
     local UGCLabel = Instance.new("TextLabel")
-    UGCLabel.Size = UDim2.new(1, -20, 0, 25)
-    UGCLabel.Position = UDim2.new(0, 10, 0, 10)
+    UGCLabel.Size = UDim2.new(1, -16, 0, 20)
+    UGCLabel.Position = UDim2.new(0, 8, 0, 5)
     UGCLabel.BackgroundTransparency = 1
-    UGCLabel.Text = "IDs UGC (separados por vírgula):"
-    UGCLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    UGCLabel.TextSize = 14
+    UGCLabel.Text = "IDs UGC:"
+    UGCLabel.TextColor3 = Color3.fromRGB(255,255,255)
+    UGCLabel.TextSize = 13
     UGCLabel.Font = Enum.Font.Gotham
     UGCLabel.TextXAlignment = Enum.TextXAlignment.Left
     UGCLabel.Parent = UGCSection
 
     local UGCInput = Instance.new("TextBox")
-    UGCInput.Size = UDim2.new(1, -20, 0, 35)
-    UGCInput.Position = UDim2.new(0, 10, 0, 40)
-    UGCInput.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-    UGCInput.TextColor3 = Color3.fromRGB(255, 255, 255)
-    UGCInput.PlaceholderText = "123456,789012,345678"
-    UGCInput.TextSize = 14
+    UGCInput.Size = UDim2.new(1, -16, 0, 30)
+    UGCInput.Position = UDim2.new(0, 8, 0, 30)
+    UGCInput.BackgroundColor3 = Color3.fromRGB(60,60,60)
+    UGCInput.TextColor3 = Color3.fromRGB(255,255,255)
+    UGCInput.PlaceholderText = "123, 456..."
+    UGCInput.TextSize = 13
     UGCInput.Font = Enum.Font.Gotham
     UGCInput.Parent = UGCSection
 
-    local InputCorner = Instance.new("UICorner")
-    InputCorner.CornerRadius = UDim.new(0, 4)
-    InputCorner.Parent = UGCInput
+    local UC2 = Instance.new("UICorner")
+    UC2.Parent = UGCInput
 
-    -- Seção Delay
+    ------------------------------------------------------------------------------------
+    -- DELAY (MENOR)
+    ------------------------------------------------------------------------------------
     local DelaySection = Instance.new("Frame")
-    DelaySection.Size = UDim2.new(1, 0, 0, 80)
-    DelaySection.Position = UDim2.new(0, 0, 0, 130)
-    DelaySection.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    DelaySection.Size = UDim2.new(1, 0, 0, 55)
+    DelaySection.Position = UDim2.new(0, 0, 0, 90)
+    DelaySection.BackgroundColor3 = Color3.fromRGB(40,40,40)
     DelaySection.Parent = ContentFrame
 
-    local DelayCorner = Instance.new("UICorner")
-    DelayCorner.CornerRadius = UDim.new(0, 6)
-    DelayCorner.Parent = DelaySection
+    local D1 = Instance.new("UICorner")
+    D1.Parent = DelaySection
 
     local DelayLabel = Instance.new("TextLabel")
-    DelayLabel.Size = UDim2.new(1, -20, 0, 25)
-    DelayLabel.Position = UDim2.new(0, 10, 0, 10)
+    DelayLabel.Size = UDim2.new(1, -16, 0, 18)
+    DelayLabel.Position = UDim2.new(0, 8, 0, 5)
     DelayLabel.BackgroundTransparency = 1
-    DelayLabel.Text = "Delay: " .. DELAY .. " segundos"
-    DelayLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    DelayLabel.TextSize = 14
+    DelayLabel.Text = "Delay: " .. DELAY
+    DelayLabel.TextColor3 = Color3.fromRGB(255,255,255)
+    DelayLabel.TextSize = 12
     DelayLabel.Font = Enum.Font.Gotham
     DelayLabel.TextXAlignment = Enum.TextXAlignment.Left
     DelayLabel.Parent = DelaySection
 
     local DelaySlider = Instance.new("TextButton")
-    DelaySlider.Size = UDim2.new(1, -20, 0, 30)
-    DelaySlider.Position = UDim2.new(0, 10, 0, 40)
-    DelaySlider.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
-    DelaySlider.Text = "Ajustar Delay"
-    DelaySlider.TextColor3 = Color3.fromRGB(255, 255, 255)
+    DelaySlider.Size = UDim2.new(1, -16, 0, 24)
+    DelaySlider.Position = UDim2.new(0, 8, 0, 28)
+    DelaySlider.BackgroundColor3 = Color3.fromRGB(80,80,80)
+    DelaySlider.Text = "Ajustar"
+    DelaySlider.TextColor3 = Color3.fromRGB(255,255,255)
     DelaySlider.TextSize = 12
     DelaySlider.Font = Enum.Font.Gotham
     DelaySlider.Parent = DelaySection
 
-    local SliderCorner = Instance.new("UICorner")
-    SliderCorner.CornerRadius = UDim.new(0, 4)
-    SliderCorner.Parent = DelaySlider
+    local DS = Instance.new("UICorner")
+    DS.Parent = DelaySlider
 
-    -- Seção Controles
+    ------------------------------------------------------------------------------------
+    -- BOTÕES (REDUZIDOS)
+    ------------------------------------------------------------------------------------
     local ControlSection = Instance.new("Frame")
-    ControlSection.Size = UDim2.new(1, 0, 0, 100)
-    ControlSection.Position = UDim2.new(0, 0, 0, 220)
-    ControlSection.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    ControlSection.Size = UDim2.new(1, 0, 0, 70)
+    ControlSection.Position = UDim2.new(0, 0, 0, 150)
+    ControlSection.BackgroundColor3 = Color3.fromRGB(40,40,40)
     ControlSection.Parent = ContentFrame
 
-    local ControlCorner = Instance.new("UICorner")
-    ControlCorner.CornerRadius = UDim.new(0, 6)
-    ControlCorner.Parent = ControlSection
+    local CC = Instance.new("UICorner")
+    CC.Parent = ControlSection
 
     local RunButton = Instance.new("TextButton")
-    RunButton.Size = UDim2.new(0.45, 0, 0, 40)
-    RunButton.Position = UDim2.new(0.025, 0, 0.5, -20)
-    RunButton.BackgroundColor3 = Color3.fromRGB(60, 140, 60)
-    RunButton.Text = "EXECUTAR"
-    RunButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    RunButton.TextSize = 14
+    RunButton.Size = UDim2.new(0.48, 0, 0, 30)
+    RunButton.Position = UDim2.new(0.01, 0, 0.5, -15)
+    RunButton.BackgroundColor3 = Color3.fromRGB(60,140,60)
+    RunButton.Text = "RUN"
+    RunButton.TextColor3 = Color3.fromRGB(255,255,255)
+    RunButton.TextSize = 13
     RunButton.Font = Enum.Font.GothamBold
     RunButton.Parent = ControlSection
 
-    local RunCorner = Instance.new("UICorner")
-    RunCorner.CornerRadius = UDim.new(0, 6)
-    RunCorner.Parent = RunButton
-
     local LoopButton = Instance.new("TextButton")
-    LoopButton.Size = UDim2.new(0.45, 0, 0, 40)
-    LoopButton.Position = UDim2.new(0.525, 0, 0.5, -20)
-    LoopButton.BackgroundColor3 = Color3.fromRGB(140, 60, 60)
-    LoopButton.Text = "INICIAR LOOP"
-    LoopButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    LoopButton.TextSize = 14
+    LoopButton.Size = UDim2.new(0.48, 0, 0, 30)
+    LoopButton.Position = UDim2.new(0.51, 0, 0.5, -15)
+    LoopButton.BackgroundColor3 = Color3.fromRGB(140,60,60)
+    LoopButton.Text = "LOOP"
+    LoopButton.TextColor3 = Color3.fromRGB(255,255,255)
+    LoopButton.TextSize = 13
     LoopButton.Font = Enum.Font.GothamBold
     LoopButton.Parent = ControlSection
 
-    local LoopCorner = Instance.new("UICorner")
-    LoopCorner.CornerRadius = UDim.new(0, 6)
-    LoopCorner.Parent = LoopButton
-
-    -- Seção Status
+    ------------------------------------------------------------------------------------
+    -- STATUS (REDUZIDO)
+    ------------------------------------------------------------------------------------
     local StatusSection = Instance.new("Frame")
-    StatusSection.Size = UDim2.new(1, 0, 0, 80)
-    StatusSection.Position = UDim2.new(0, 0, 0, 330)
-    StatusSection.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    StatusSection.Size = UDim2.new(1, 0, 0, 50)
+    StatusSection.Position = UDim2.new(0, 0, 0, 225)
+    StatusSection.BackgroundColor3 = Color3.fromRGB(40,40,40)
     StatusSection.Parent = ContentFrame
 
-    local StatusCorner = Instance.new("UICorner")
-    StatusCorner.CornerRadius = UDim.new(0, 6)
-    StatusCorner.Parent = StatusSection
+    local SS = Instance.new("UICorner")
+    SS.Parent = StatusSection
 
     local StatusLabel = Instance.new("TextLabel")
-    StatusLabel.Size = UDim2.new(1, -20, 1, -20)
-    StatusLabel.Position = UDim2.new(0, 10, 0, 10)
+    StatusLabel.Size = UDim2.new(1, -16, 1, -10)
+    StatusLabel.Position = UDim2.new(0, 8, 0, 5)
     StatusLabel.BackgroundTransparency = 1
-    StatusLabel.Text = "Status: Hooks ativos! Adicione IDs."
-    StatusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-    StatusLabel.TextSize = 12
+    StatusLabel.Text = "Status: pronto."
+    StatusLabel.TextColor3 = Color3.fromRGB(200,200,200)
+    StatusLabel.TextSize = 11
     StatusLabel.Font = Enum.Font.Gotham
     StatusLabel.TextWrapped = true
     StatusLabel.Parent = StatusSection
 
-    -- Seção Créditos
+    ------------------------------------------------------------------------------------
+    -- CRÉDITOS (REDUZIDO)
+    ------------------------------------------------------------------------------------
     local CreditSection = Instance.new("Frame")
-    CreditSection.Size = UDim2.new(1, 0, 0, 60)
-    CreditSection.Position = UDim2.new(0, 0, 0, 420)
-    CreditSection.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    CreditSection.Size = UDim2.new(1, 0, 0, 40)
+    CreditSection.Position = UDim2.new(0, 0, 0, 280)
+    CreditSection.BackgroundColor3 = Color3.fromRGB(40,40,40)
     CreditSection.Parent = ContentFrame
 
-    local CreditCorner = Instance.new("UICorner")
-    CreditCorner.CornerRadius = UDim.new(0, 6)
-    CreditCorner.Parent = CreditSection
+    local CS = Instance.new("UICorner")
+    CS.Parent = CreditSection
 
     local CreditButton = Instance.new("TextButton")
-    CreditButton.Size = UDim2.new(1, -20, 1, -20)
-    CreditButton.Position = UDim2.new(0, 10, 0, 10)
-    CreditButton.BackgroundColor3 = Color3.fromRGB(80, 80, 180)
-    CreditButton.Text = "CRÉDITOS - @imkaisure"
-    CreditButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    CreditButton.TextSize = 14
+    CreditButton.Size = UDim2.new(1, -16, 1, -10)
+    CreditButton.Position = UDim2.new(0, 8, 0, 5)
+    CreditButton.BackgroundColor3 = Color3.fromRGB(80,80,180)
+    CreditButton.Text = "CRÉDITOS"
+    CreditButton.TextColor3 = Color3.fromRGB(255,255,255)
+    CreditButton.TextSize = 12
     CreditButton.Font = Enum.Font.GothamBold
     CreditButton.Parent = CreditSection
 
-    local CreditCorner2 = Instance.new("UICorner")
-    CreditCorner2.CornerRadius = UDim.new(0, 6)
-    CreditCorner2.Parent = CreditButton
+    local CC2 = Instance.new("UICorner")
+    CC2.Parent = CreditButton
 
     -- Função para arrastar a janela
     local dragging = false
@@ -438,10 +422,10 @@ local function CreateNativeUI()
     MinimizeButton.MouseButton1Click:Connect(function()
         isMinimized = not isMinimized
         if isMinimized then
-            TweenService:Create(MainFrame, TweenInfo.new(0.3), {Size = UDim2.new(0, 400, 0, 40)}):Play()
+            TweenService:Create(MainFrame, TweenInfo.new(0.3), {Size = UDim2.new(0, 280, 0, 40)}):Play()
             ContentFrame.Visible = false
         else
-            TweenService:Create(MainFrame, TweenInfo.new(0.3), {Size = UDim2.new(0, 400, 0, 500)}):Play()
+            TweenService:Create(MainFrame, TweenInfo.new(0.3), {Size = UDim2.new(0, 280, 0, 360)}):Play()
             ContentFrame.Visible = true
         end
     end)
@@ -495,7 +479,7 @@ local function CreateNativeUI()
                 end
             end)
         else
-            LoopButton.Text = "INICIAR LOOP"
+            LoopButton.Text = "LOOP"
             LoopButton.BackgroundColor3 = Color3.fromRGB(140, 60, 60)
             StatusLabel.Text = "Status: Loop parado"
         end
@@ -521,4 +505,4 @@ pcall(function()
 end)
 
 -- 🔒 DIGITAL SIGNATURE: kaimakwonw/Script-fakePurchaseFlo - DO NOT MODIFY
--- 📅 Created: $(date +"%Y-%m-%d %H:%M:%S") - Tracked by Git
+-- 📅 Created: 2024-11-24 - Tracked by Git
