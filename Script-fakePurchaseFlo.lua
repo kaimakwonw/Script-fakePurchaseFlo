@@ -1,5 +1,5 @@
 --[[
-    @Imkaisure01 fakePurchase - Versão Compacta com Minimizar/Fechar
+    Kaisure UGC Tools - Versão Compacta com Minimizar/Fechar
 ]]
 
 local Players = game:GetService("Players")
