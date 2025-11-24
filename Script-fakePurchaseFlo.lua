@@ -1,6 +1,5 @@
 --[[
-    Kaisure UGC Tools - Versão Curta / Mobile-Friendly
-    Arrastável no celular + Hooks + Fake Purchase + UI simples
+    @Imkaisure01 fakePurchase - Versão Compacta com Minimizar/Fechar
 ]]
 
 local Players = game:GetService("Players")
@@ -12,22 +11,18 @@ local LP = Players.LocalPlayer
 local UGC_IDS = {}
 local DELAY = 0.1
 local LOOP = false
+local MINIMIZED = false
 
 -----------------------------------------
 -- HOOKS
 -----------------------------------------
 
 local function setupHooks()
-    local function fakeReturn(cond, val, orig, self, keyOrMethod, ...)
-        if cond then return val end
-        return orig(self, keyOrMethod, ...)
-    end
-
     local idx
     idx = hookmetamethod(game, "__index", function(self, key)
         for _, id in ipairs(UGC_IDS) do
             if tostring(self):match("Ownership|Inventory|UGC") then
-                return fakeReturn(true, true, idx, self, key)
+                return true
             end
         end
         return idx(self, key)
@@ -55,19 +50,7 @@ local function setupHooks()
                     IsOwned = true
                 }
             end
-            if m == "ProcessReceipt" and args[1] and (args[1].ProductId == id) then
-                return Enum.ProductPurchaseDecision.PurchaseGranted
-            end
-            if (m == "HttpGet" or m == "HttpGetAsync")
-                and tostring(args[1]):match("inventory") then
-                return HttpService:JSONEncode({
-                    owned = true,
-                    assetId = id,
-                    userId = LP.UserId
-                })
-            end
         end
-
         return nc(self, ...)
     end)
 end
@@ -75,103 +58,103 @@ end
 setupHooks()
 
 -----------------------------------------
--- Fake purchase simples
------------------------------------------
-
-local function fakePurchase()
-    for _, id in ipairs(UGC_IDS) do
-        pcall(function()
-            MarketplaceService:SignalPromptPurchaseFinished(LP, id, true)
-        end)
-        task.wait(0.05)
-    end
-end
-
------------------------------------------
--- UI SHORT VERSION + MOBILE DRAG
+-- UI COMPACTA COM MINIMIZAR/FECHAR
 -----------------------------------------
 
 local gui = Instance.new("ScreenGui", LP.PlayerGui)
 gui.ResetOnSpawn = false
 
 local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0, 330, 0, 350)
-frame.Position = UDim2.new(.5, -165, .5, -175)
+frame.Size = UDim2.new(0, 280, 0, 200)
+frame.Position = UDim2.new(.5, -140, .5, -100)
 frame.BackgroundColor3 = Color3.fromRGB(30,30,30)
-
 Instance.new("UICorner", frame)
 
 local bar = Instance.new("TextLabel", frame)
-bar.Size = UDim2.new(1,0,0,35)
+bar.Size = UDim2.new(1,0,0,25)
 bar.BackgroundColor3 = Color3.fromRGB(45,45,45)
-bar.Text = "Kaisure UGC Tools"
+bar.Text = "Kaisure UGC"
 bar.TextColor3 = Color3.new(1,1,1)
 bar.Font = Enum.Font.GothamBold
-bar.TextSize = 16
-
+bar.TextSize = 14
 Instance.new("UICorner", bar)
 
--- INPUT UGC
-local box = Instance.new("TextBox", frame)
-box.Size = UDim2.new(1,-20,0,30)
-box.Position = UDim2.new(0,10,0,50)
+-- Botão Fechar
+local closeBtn = Instance.new("TextButton", bar)
+closeBtn.Size = UDim2.new(0, 20, 0, 20)
+closeBtn.Position = UDim2.new(1, -25, 0.5, -10)
+closeBtn.BackgroundColor3 = Color3.fromRGB(220, 60, 60)
+closeBtn.Text = "X"
+closeBtn.TextColor3 = Color3.new(1,1,1)
+closeBtn.TextSize = 12
+closeBtn.ZIndex = 2
+Instance.new("UICorner", closeBtn)
+
+-- Botão Minimizar
+local minBtn = Instance.new("TextButton", bar)
+minBtn.Size = UDim2.new(0, 20, 0, 20)
+minBtn.Position = UDim2.new(1, -50, 0.5, -10)
+minBtn.BackgroundColor3 = Color3.fromRGB(240, 180, 60)
+minBtn.Text = "_"
+minBtn.TextColor3 = Color3.new(1,1,1)
+minBtn.TextSize = 12
+minBtn.ZIndex = 2
+Instance.new("UICorner", minBtn)
+
+-- Conteúdo principal (será escondido quando minimizado)
+local content = Instance.new("Frame", frame)
+content.Size = UDim2.new(1, 0, 1, -25)
+content.Position = UDim2.new(0, 0, 0, 25)
+content.BackgroundTransparency = 1
+content.Name = "Content"
+
+local box = Instance.new("TextBox", content)
+box.Size = UDim2.new(1,-20,0,25)
+box.Position = UDim2.new(0,10,0,10)
 box.BackgroundColor3 = Color3.fromRGB(50,50,50)
 box.PlaceholderText = "IDs separados por vírgula"
 box.TextColor3 = Color3.new(1,1,1)
-
+box.TextSize = 12
 Instance.new("UICorner", box)
 
--- DELAY BUTTON
-local delayBtn = Instance.new("TextButton", frame)
-delayBtn.Size = UDim2.new(.45,0,0,35)
-delayBtn.Position = UDim2.new(.05,0,0,100)
+local delayBtn = Instance.new("TextButton", content)
+delayBtn.Size = UDim2.new(.45,0,0,25)
+delayBtn.Position = UDim2.new(.05,0,0,45)
 delayBtn.BackgroundColor3 = Color3.fromRGB(70,70,70)
 delayBtn.Text = "Delay: 0.1"
-
+delayBtn.TextSize = 12
 Instance.new("UICorner", delayBtn)
 
--- RUN BUTTON
-local runBtn = Instance.new("TextButton", frame)
-runBtn.Size = UDim2.new(.45,0,0,35)
-runBtn.Position = UDim2.new(.5,0,0,100)
+local runBtn = Instance.new("TextButton", content)
+runBtn.Size = UDim2.new(.45,0,0,25)
+runBtn.Position = UDim2.new(.5,0,0,45)
 runBtn.BackgroundColor3 = Color3.fromRGB(0,140,70)
 runBtn.Text = "EXECUTAR"
-
+runBtn.TextSize = 12
 Instance.new("UICorner", runBtn)
 
--- LOOP BUTTON
-local loopBtn = Instance.new("TextButton", frame)
-loopBtn.Size = UDim2.new(.9,0,0,35)
-loopBtn.Position = UDim2.new(.05,0,0,145)
+local loopBtn = Instance.new("TextButton", content)
+loopBtn.Size = UDim2.new(.9,0,0,25)
+loopBtn.Position = UDim2.new(.05,0,0,80)
 loopBtn.BackgroundColor3 = Color3.fromRGB(140,40,40)
 loopBtn.Text = "INICIAR LOOP"
-
+loopBtn.TextSize = 12
 Instance.new("UICorner", loopBtn)
 
--- STATUS
-local status = Instance.new("TextLabel", frame)
-status.Size = UDim2.new(.9,0,0,80)
-status.Position = UDim2.new(.05,0,0,195)
+local status = Instance.new("TextLabel", content)
+status.Size = UDim2.new(.9,0,0,50)
+status.Position = UDim2.new(.05,0,0,115)
 status.TextWrapped = true
 status.TextColor3 = Color3.new(1,1,1)
 status.BackgroundTransparency = 1
 status.Text = "Aguardando IDs..."
+status.TextSize = 11
 
 -----------------------------------------
--- MOBILE + PC DRAG
+-- DRAG MOBILE/PC
 -----------------------------------------
 
-local dragging = false
-local dragStart
-local startPos
-
-local function drag(input)
-    local delta = input.Position - dragStart
-    frame.Position = UDim2.new(
-        startPos.X.Scale, startPos.X.Offset + delta.X,
-        startPos.Y.Scale, startPos.Y.Offset + delta.Y
-    )
-end
+local dragging, dragStart, startPos
 
 bar.InputBegan:Connect(function(i)
     if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
@@ -188,20 +171,57 @@ end)
 
 UIS.InputChanged:Connect(function(i)
     if dragging and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
-        drag(i)
+        local delta = i.Position - dragStart
+        frame.Position = UDim2.new(
+            startPos.X.Scale, startPos.X.Offset + delta.X,
+            startPos.Y.Scale, startPos.Y.Offset + delta.Y
+        )
     end
 end)
 
 -----------------------------------------
--- HANDLERS
+-- FUNÇÕES MINIMIZAR/FECHAR
 -----------------------------------------
+
+local function toggleMinimize()
+    MINIMIZED = not MINIMIZED
+    if MINIMIZED then
+        content.Visible = false
+        frame.Size = UDim2.new(0, 280, 0, 25)
+        minBtn.Text = "+"
+    else
+        content.Visible = true
+        frame.Size = UDim2.new(0, 280, 0, 200)
+        minBtn.Text = "_"
+    end
+end
+
+local function closeGUI()
+    gui:Destroy()
+end
+
+minBtn.MouseButton1Click:Connect(toggleMinimize)
+closeBtn.MouseButton1Click:Connect(closeGUI)
+
+-----------------------------------------
+-- FUNÇÕES PRINCIPAIS
+-----------------------------------------
+
+local function fakePurchase()
+    for _, id in ipairs(UGC_IDS) do
+        pcall(function()
+            MarketplaceService:SignalPromptPurchaseFinished(LP, id, true)
+        end)
+        task.wait(0.05)
+    end
+end
 
 box.FocusLost:Connect(function()
     UGC_IDS = {}
     for id in box.Text:gmatch("%d+") do
         table.insert(UGC_IDS, tonumber(id))
     end
-    status.Text = "IDs carregados: " .. #UGC_IDS
+    status.Text = "IDs: " .. #UGC_IDS
 end)
 
 delayBtn.MouseButton1Click:Connect(function()
@@ -219,13 +239,10 @@ end)
 
 loopBtn.MouseButton1Click:Connect(function()
     if #UGC_IDS == 0 then status.Text = "Adicione IDs!"; return end
-
     LOOP = not LOOP
     loopBtn.Text = LOOP and "PARAR LOOP" or "INICIAR LOOP"
     loopBtn.BackgroundColor3 = LOOP and Color3.fromRGB(0,140,70) or Color3.fromRGB(140,40,40)
-
     status.Text = LOOP and "Loop ativo..." or "Loop parado."
-
     if LOOP then
         task.spawn(function()
             while LOOP do
@@ -236,4 +253,4 @@ loopBtn.MouseButton1Click:Connect(function()
     end
 end)
 
-print("Kaisure Tools carregado.")
+print("Kaisure Tools Compacto carregado.")
